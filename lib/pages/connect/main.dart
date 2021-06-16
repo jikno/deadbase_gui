@@ -1,38 +1,12 @@
-import 'package:deadbase_gui/pages/connect/components/input.dart';
 import 'package:flutter/material.dart';
+import '../components/input.dart';
 import '../../services/list_connections.dart';
+import '../../state.dart';
+import '../../utils.dart';
 
 class Connect extends StatefulWidget {
   @override
   _ConnectState createState() => _ConnectState();
-}
-
-late BuildContext scaffoldContext;
-
-void notifyUser(String message, {bool success = false, bool failure = false}) {
-  final snackbar = SnackBar(
-    content: Row(
-      children: [
-        success
-            ? Icon(
-                Icons.check,
-                color: Colors.green,
-              )
-            : failure
-                ? Icon(
-                    Icons.close,
-                    color: Colors.red,
-                  )
-                : Icon(Icons.info, color: Colors.blue),
-        SizedBox(
-          width: 10,
-        ),
-        Text(message)
-      ],
-    ),
-  );
-
-  ScaffoldMessenger.of(scaffoldContext).showSnackBar(snackbar);
 }
 
 class _ConnectState extends State<Connect> {
