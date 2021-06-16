@@ -1,6 +1,7 @@
+import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import '../components/input.dart';
-import '../../services/list_connections.dart';
+import '../../services/api.dart';
 import '../../state.dart';
 import '../../utils.dart';
 
@@ -42,6 +43,8 @@ class _ConnectState extends State<Connect> {
       setState(() {
         loading = false;
       });
+
+      Beamer.of(scaffoldContext!).beamToNamed('/database');
     } on DatabaseConnectionException catch (e) {
       if (e.statusCode == 500) {
         notifyUser(e.errorResponse, failure: true);
@@ -75,6 +78,8 @@ class _ConnectState extends State<Connect> {
         hostError = 'Could not connect';
       });
     } catch (e) {
+      print(e);
+
       rethrow;
     }
   }

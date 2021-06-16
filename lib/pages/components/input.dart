@@ -6,6 +6,7 @@ class Input extends StatelessWidget {
   final String? error;
   final String? label;
   final Function(String)? onChanged;
+  final String value;
 
   Input({
     this.obscureText = false,
@@ -13,11 +14,13 @@ class Input extends StatelessWidget {
     this.error,
     this.label,
     this.onChanged,
+    this.value = '',
   });
 
   @override
   Widget build(BuildContext context) {
-    return TextField(
+    return TextFormField(
+      initialValue: value,
       autocorrect: autocorrect,
       decoration: InputDecoration(
         fillColor: Colors.grey[250],
