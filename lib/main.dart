@@ -21,7 +21,7 @@ class Application extends StatelessWidget {
     locationBuilder: SimpleLocationBuilder(
       routes: {
         '/': (context, state) => Connect(),
-        '/database': (context, state) => Database(),
+        '/database/:id': (context, state) => Database(),
       },
     ),
   );

@@ -1,14 +1,14 @@
-import 'package:deadbase_gui/pages/components/input.dart';
-import 'package:deadbase_gui/services/api.dart';
+import '../../components/input.dart';
+import '../../../services/deadbase.dart';
 import 'package:deadbase_gui/utils.dart';
 import 'package:flutter/material.dart';
-import '../../../state.dart' as state;
 
 class DeleteCollectionDialog extends StatefulWidget {
   final VoidCallback onClosed;
   final String name;
+  final Deadbase deadbase;
 
-  DeleteCollectionDialog({required this.onClosed, required this.name});
+  DeleteCollectionDialog({required this.onClosed, required this.name, required this.deadbase});
 
   @override
   _DeleteCollectionDialogState createState() => _DeleteCollectionDialogState();
@@ -27,12 +27,12 @@ class _DeleteCollectionDialogState extends State<DeleteCollectionDialog> {
     });
 
     try {
-      await deleteCollection(state.host, state.databaseName, state.auth, widget.name);
+      await widget.deadbase.deleteCollection(widget.name);
 
-      notifyUser('Collection deleted', success: true);
+      notifyUser(context, 'Collection deleted', success: true);
       Navigator.pop(context);
       widget.onClosed();
-    } on DatabaseConnectionException catch (e) {
+    } on DeadbaseConnectionException catch (e) {
       if (e.statusCode == 406) {
         setState(() {
           loading = false;
@@ -44,9 +44,9 @@ class _DeleteCollectionDialogState extends State<DeleteCollectionDialog> {
         });
       }
 
-      notifyUser(e.errorResponse, failure: true);
+      notifyUser(context, e.errorResponse, failure: true);
     } on NetworkException {
-      notifyUser('Could not connect to database', failure: true);
+      notifyUser(context, 'Could not connect to database', failure: true);
       setState(() {
         loading = false;
       });

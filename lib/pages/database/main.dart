@@ -1,12 +1,13 @@
-import 'package:context_menus/context_menus.dart';
-import 'package:deadbase_gui/pages/database/components/add_collection_dialog.dart';
-import 'package:deadbase_gui/pages/database/components/delete_collection_dialog.dart';
-import 'package:deadbase_gui/pages/database/components/edit_database_dialog.dart';
-import 'package:deadbase_gui/pages/database/components/rename_collection_dialog.dart';
-import 'package:deadbase_gui/utils.dart';
 import 'package:flutter/material.dart';
-import '../../state.dart' as state;
-import '../../services/api.dart';
+import 'package:beamer/beamer.dart';
+import 'package:context_menus/context_menus.dart';
+import '../database/components/add_collection_dialog.dart';
+import '../database/components/delete_collection_dialog.dart';
+import '../database/components/edit_database_dialog.dart';
+import '../database/components/rename_collection_dialog.dart';
+import '../../services/deadbase.dart';
+import '../../utils.dart';
+import '../../state.dart';
 import './components/collection_name.dart';
 
 class Database extends StatefulWidget {
@@ -16,50 +17,94 @@ class Database extends StatefulWidget {
 
 class _DatabaseState extends State<Database> {
   bool loadingCollections = false;
-  List<String> collections = state.collections;
+  List<String> collections = [];
   String? focusedCollection;
+
+  late Deadbase deadbase;
 
   void loadCollections() async {
     setState(() {
       loadingCollections = true;
     });
 
-    await fetchCollections(state.host, state.databaseName, state.auth);
+    try {
+      final collections = await deadbase.getCollections();
 
-    setState(() {
-      loadingCollections = false;
-      collections = state.collections;
-    });
+      setState(() {
+        loadingCollections = false;
+        this.collections = collections;
+      });
+    } on NetworkException {
+      notifyUser(context, 'Could not connect to database', failure: true);
+
+      setState(() {
+        loadingCollections = false;
+      });
+    }
   }
 
   void addCollection() {
-    showDialog(context: context, builder: (context) => AddCollectionDialog(onClosed: () => loadCollections()));
+    showDialog(
+      context: context,
+      builder: (context) => AddCollectionDialog(
+        deadbase: deadbase,
+        onClosed: () => loadCollections(),
+      ),
+    );
   }
 
   void renameCollection(String collection) {
     showDialog(
-        context: context,
-        builder: (context) => RenameCollectionDialog(onClosed: () => loadCollections(), name: collection));
+      context: context,
+      builder: (context) => RenameCollectionDialog(
+        deadbase: deadbase,
+        onClosed: () => loadCollections(),
+        name: collection,
+      ),
+    );
   }
 
   void deleteCollection(String collection) {
     showDialog(
-        context: context,
-        builder: (context) => DeleteCollectionDialog(onClosed: () => loadCollections(), name: collection));
+      context: context,
+      builder: (context) => DeleteCollectionDialog(
+        deadbase: deadbase,
+        onClosed: () => loadCollections(),
+        name: collection,
+      ),
+    );
   }
 
   void editDatabaseMeta() {
     showDialog(
-        context: context, builder: (context) => EditDatabaseDialog(onClosed: () => null, name: state.databaseName));
+      context: context,
+      builder: (context) => EditDatabaseDialog(
+        onClosed: () => setState(() => deadbase = deadbase),
+        deadbase: deadbase,
+      ),
+    );
   }
+
+  var buildCalledBefore = false;
 
   @override
   Widget build(BuildContext context) {
-    if (state.host.isEmpty)
+    final id = Beamer.of(context).currentBeamLocation.state.pathParameters['id'];
+
+    try {
+      deadbase = getStashedDatabase(id!);
+    } on InvalidDeadbaseIdException {
       return Scaffold(
-          body: Center(
-        child: Text('Not connected to a database'),
-      ));
+        body: Center(
+          child: Text('Database reference was not found'),
+        ),
+      );
+    }
+
+    if (!buildCalledBefore) {
+      buildCalledBefore = true;
+      loadCollections();
+    }
 
     return Scaffold(
       body: ContextMenuOverlay(
@@ -73,7 +118,7 @@ class _DatabaseState extends State<Database> {
                     ContextMenuButtonConfig('Edit database meta', onPressed: editDatabaseMeta),
                     ContextMenuButtonConfig('Refetch connections', onPressed: () {
                       loadCollections();
-                      notifyUser('Collections are up to date!', success: true);
+                      notifyUser(context, 'Collections are up to date!', success: true);
                     }),
                     ContextMenuButtonConfig('Add collection', onPressed: addCollection)
                   ],
@@ -92,9 +137,9 @@ class _DatabaseState extends State<Database> {
                           children: [
                             Expanded(
                               child: Tooltip(
-                                message: state.databaseName,
+                                message: deadbase.name,
                                 child: Text(
-                                  state.databaseName,
+                                  deadbase.name,
                                   style: Theme.of(context).textTheme.headline5,
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -111,7 +156,7 @@ class _DatabaseState extends State<Database> {
                                   ? null
                                   : () {
                                       loadCollections();
-                                      notifyUser('Collections are up to date!', success: true);
+                                      notifyUser(context, 'Collections are up to date!', success: true);
                                     },
                               icon: Icon(Icons.sync),
                               tooltip: 'Refetch collections',

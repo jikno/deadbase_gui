@@ -1,14 +1,14 @@
-import 'package:deadbase_gui/pages/components/input.dart';
-import 'package:deadbase_gui/services/api.dart';
-import 'package:deadbase_gui/utils.dart';
 import 'package:flutter/material.dart';
-import '../../../state.dart' as state;
+import '../../components/input.dart';
+import '../../../services/deadbase.dart';
+import '../../../utils.dart';
 
 class RenameCollectionDialog extends StatefulWidget {
   final VoidCallback onClosed;
   final String name;
+  final Deadbase deadbase;
 
-  RenameCollectionDialog({required this.onClosed, required this.name});
+  RenameCollectionDialog({required this.onClosed, required this.name, required this.deadbase});
 
   @override
   _RenameCollectionDialogState createState() => _RenameCollectionDialogState();
@@ -27,12 +27,12 @@ class _RenameCollectionDialogState extends State<RenameCollectionDialog> {
     });
 
     try {
-      await renameCollection(state.host, state.databaseName, state.auth, widget.name, newName!);
+      await widget.deadbase.renameCollection(widget.name, newName!);
 
-      notifyUser('Collection renamed', success: true);
+      notifyUser(context, 'Collection renamed', success: true);
       Navigator.pop(context);
       widget.onClosed();
-    } on DatabaseConnectionException catch (e) {
+    } on DeadbaseConnectionException catch (e) {
       if (e.statusCode == 406) {
         setState(() {
           loading = false;
@@ -44,9 +44,9 @@ class _RenameCollectionDialogState extends State<RenameCollectionDialog> {
         });
       }
 
-      notifyUser(e.errorResponse, failure: true);
+      notifyUser(context, e.errorResponse, failure: true);
     } on NetworkException {
-      notifyUser('Could not connect to database', failure: true);
+      notifyUser(context, 'Could not connect to database', failure: true);
       setState(() {
         loading = false;
       });

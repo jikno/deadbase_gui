@@ -1,11 +1,6 @@
 import 'package:flutter/material.dart';
-import './state.dart';
 
-class NoScaffoldContextException implements Exception {}
-
-void notifyUser(String message, {bool success = false, bool failure = false}) {
-  if (scaffoldContext == null) throw NoScaffoldContextException();
-
+void notifyUser(BuildContext context, String message, {bool success = false, bool failure = false}) {
   final snackbar = SnackBar(
     content: Row(
       children: [
@@ -28,5 +23,5 @@ void notifyUser(String message, {bool success = false, bool failure = false}) {
     ),
   );
 
-  ScaffoldMessenger.of(scaffoldContext!).showSnackBar(snackbar);
+  ScaffoldMessenger.of(context).showSnackBar(snackbar);
 }

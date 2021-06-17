@@ -1,9 +1,9 @@
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import '../components/input.dart';
-import '../../services/api.dart';
-import '../../state.dart';
+import '../../services/deadbase.dart';
 import '../../utils.dart';
+import '../../state.dart';
 
 class Connect extends StatefulWidget {
   @override
@@ -13,13 +13,15 @@ class Connect extends StatefulWidget {
 class _ConnectState extends State<Connect> {
   String host = '';
   String name = '';
-  String auth = '';
+  String? auth;
 
   String? hostError;
   String? nameError;
   String? authError;
 
   bool loading = false;
+
+  final stashDeadbase = prepareStashDeadbase();
 
   void connect() async {
     if (host.isEmpty || name.isEmpty)
@@ -37,22 +39,25 @@ class _ConnectState extends State<Connect> {
     });
 
     try {
-      await fetchCollections(host, name, auth);
+      final deadbase = Deadbase(host: host, name: name, auth: auth);
+      final id = stashDeadbase(deadbase);
 
-      notifyUser('Connected to database!', success: true);
+      await deadbase.ping();
+
+      notifyUser(context, 'Connected to database!', success: true);
       setState(() {
         loading = false;
       });
 
-      Beamer.of(scaffoldContext!).beamToNamed('/database');
-    } on DatabaseConnectionException catch (e) {
+      Beamer.of(context).beamToNamed('/database/$id');
+    } on DeadbaseConnectionException catch (e) {
       if (e.statusCode == 500) {
-        notifyUser(e.errorResponse, failure: true);
+        notifyUser(context, e.errorResponse, failure: true);
         setState(() {
           loading = false;
         });
       } else if (e.statusCode == 403) {
-        notifyUser(e.errorResponse, failure: true);
+        notifyUser(context, e.errorResponse, failure: true);
         setState(() {
           loading = false;
           setState(() {
@@ -60,19 +65,19 @@ class _ConnectState extends State<Connect> {
           });
         });
       } else if (e.statusCode == 406) {
-        notifyUser(e.errorResponse, failure: true);
+        notifyUser(context, e.errorResponse, failure: true);
         setState(() {
           loading = false;
           nameError = 'Could not find a database with this name';
         });
       } else {
-        notifyUser(e.errorResponse, failure: true);
+        notifyUser(context, e.errorResponse, failure: true);
         setState(() {
           loading = false;
         });
       }
     } on NetworkException {
-      notifyUser('Could not connect to host', failure: true);
+      notifyUser(context, 'Could not connect to host', failure: true);
       setState(() {
         loading = false;
         hostError = 'Could not connect';
@@ -87,76 +92,75 @@ class _ConnectState extends State<Connect> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Builder(
-        builder: (context) {
-          scaffoldContext = context;
-
-          return SingleChildScrollView(
-            child: Center(
-              child: Container(
-                constraints: BoxConstraints(maxWidth: 500),
-                child: Column(
+      body: SingleChildScrollView(
+        child: Center(
+          child: Container(
+            constraints: BoxConstraints(maxWidth: 500),
+            child: Column(
+              children: [
+                SizedBox(
+                  height: 30,
+                ),
+                Text(
+                  'Connect to a database',
+                  style: Theme.of(context).textTheme.headline4,
+                ),
+                SizedBox(
+                  height: 30,
+                ),
+                Input(
+                  autocorrect: false,
+                  label: 'Host',
+                  onChanged: (value) => host = value,
+                  error: hostError,
+                ),
+                SizedBox(
+                  height: 30,
+                ),
+                Input(
+                  label: 'Name',
+                  onChanged: (value) => name = value,
+                  error: nameError,
+                ),
+                SizedBox(
+                  height: 30,
+                ),
+                Input(
+                  autocorrect: false,
+                  label: 'Authentication',
+                  obscureText: true,
+                  onChanged: (value) {
+                    if (value.isEmpty)
+                      auth = null;
+                    else
+                      auth = value;
+                  },
+                  error: authError,
+                ),
+                SizedBox(
+                  height: 30,
+                ),
+                Row(
                   children: [
-                    SizedBox(
-                      height: 30,
+                    Expanded(
+                      child: Container(),
                     ),
-                    Text(
-                      'Connect to a database',
-                      style: Theme.of(context).textTheme.headline4,
-                    ),
-                    SizedBox(
-                      height: 30,
-                    ),
-                    Input(
-                      autocorrect: false,
-                      label: 'Host',
-                      onChanged: (value) => host = value,
-                      error: hostError,
-                    ),
-                    SizedBox(
-                      height: 30,
-                    ),
-                    Input(
-                      label: 'Name',
-                      onChanged: (value) => name = value,
-                      error: nameError,
-                    ),
-                    SizedBox(
-                      height: 30,
-                    ),
-                    Input(
-                      autocorrect: false,
-                      label: 'Authentication',
-                      obscureText: true,
-                      onChanged: (value) => auth = value,
-                      error: authError,
-                    ),
-                    SizedBox(
-                      height: 30,
-                    ),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Container(),
-                        ),
-                        ElevatedButton(
-                          onPressed: loading ? null : connect,
-                          child: Container(
-                            child: Text('Connect'),
-                            padding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                          ),
-                        )
-                      ],
-                    ),
-                    SizedBox(
-                      height: 30,
-                    ),
+                    ElevatedButton(
+                      onPressed: loading ? null : connect,
+                      child: Container(
+                        child: Text('Connect'),
+                        padding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                      ),
+                    )
                   ],
                 ),
-              ),
+                SizedBox(
+                  height: 30,
+                ),
+              ],
             ),
-          );
-        },
+          ),
+        ),
       ),
     );
   }

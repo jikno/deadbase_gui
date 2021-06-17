@@ -1,18 +1,13 @@
-//
-// TODO: NOT FULLY FUNCTIONAL
-//
-
-import 'package:deadbase_gui/pages/components/input.dart';
-import 'package:deadbase_gui/services/api.dart';
-import 'package:deadbase_gui/utils.dart';
 import 'package:flutter/material.dart';
-import '../../../state.dart' as state;
+import '../../components/input.dart';
+import '../../../services/deadbase.dart';
+import '../../../utils.dart';
 
 class EditDatabaseDialog extends StatefulWidget {
   final VoidCallback onClosed;
-  final String name;
+  final Deadbase deadbase;
 
-  EditDatabaseDialog({required this.onClosed, required this.name});
+  EditDatabaseDialog({required this.onClosed, required this.deadbase});
 
   @override
   _EditDatabaseDialogState createState() => _EditDatabaseDialogState();
@@ -20,8 +15,11 @@ class EditDatabaseDialog extends StatefulWidget {
 
 class _EditDatabaseDialogState extends State<EditDatabaseDialog> {
   String? nameError;
+  String? authError;
   String? newName;
+  String? newAuth;
 
+  bool authWasEdited = false;
   bool loading = false;
 
   void rename() async {
@@ -31,16 +29,19 @@ class _EditDatabaseDialogState extends State<EditDatabaseDialog> {
     });
 
     try {
-      // await renameCollection(state.host, state.databaseName, state.auth, newName!);
+      await widget.deadbase.editDatabase(newName ?? widget.deadbase.name, newAuth);
 
-      notifyUser('Database renamed!', success: true);
+      notifyUser(context, 'Database info updated!', success: true);
       Navigator.pop(context);
       widget.onClosed();
-    } on DatabaseConnectionException catch (e) {
+    } on DeadbaseConnectionException catch (e) {
       if (e.statusCode == 406) {
         setState(() {
           loading = false;
-          nameError = e.errorResponse;
+          if (e.errorResponse.contains('auth'))
+            authError = e.errorResponse;
+          else
+            nameError = e.errorResponse;
         });
       } else {
         setState(() {
@@ -48,9 +49,9 @@ class _EditDatabaseDialogState extends State<EditDatabaseDialog> {
         });
       }
 
-      notifyUser(e.errorResponse, failure: true);
+      notifyUser(context, e.errorResponse, failure: true);
     } on NetworkException {
-      notifyUser('Could not connect to database', failure: true);
+      notifyUser(context, 'Could not connect to database', failure: true);
       setState(() {
         loading = false;
       });
@@ -78,16 +79,26 @@ class _EditDatabaseDialogState extends State<EditDatabaseDialog> {
               Input(
                 label: 'Name',
                 error: nameError,
-                value: widget.name,
+                value: widget.deadbase.name,
                 onChanged: (value) => setState(() => newName = value),
+              ),
+              SizedBox(height: 30),
+              Input(
+                label: 'Auth',
+                error: authError,
+                value: widget.deadbase.auth ?? '',
+                onChanged: (value) => setState(() {
+                  authWasEdited = true;
+
+                  if (value.isEmpty)
+                    newAuth = null;
+                  else
+                    newAuth = value;
+                }),
               ),
               SizedBox(height: 30),
               Row(
                 children: [
-                  ElevatedButton(
-                      onPressed: () {},
-                      style: ElevatedButton.styleFrom(primary: Colors.red),
-                      child: Padding(padding: const EdgeInsets.all(8), child: Text('Change authentication'))),
                   Expanded(
                     child: Container(),
                   ),
@@ -102,14 +113,13 @@ class _EditDatabaseDialogState extends State<EditDatabaseDialog> {
                   ElevatedButton(
                     onPressed: loading
                         ? null
-                        : newName == null
+                        : (newName == null || newName == widget.deadbase.name) &&
+                                (!authWasEdited || newAuth == widget.deadbase.auth)
                             ? null
-                            : newName == widget.name
-                                ? null
-                                : rename,
+                            : rename,
                     child: Padding(
                       padding: const EdgeInsets.all(8),
-                      child: Text('Rename'),
+                      child: Text('Save'),
                     ),
                   ),
                 ],
