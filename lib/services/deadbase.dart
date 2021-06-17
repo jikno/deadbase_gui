@@ -141,4 +141,69 @@ class Deadbase {
     name = newName;
     auth = newAuth;
   }
+
+  Future<List<String>> getDocuments(String collection) async {
+    final url = Uri.parse('$host/$name/collections/$collection/documents');
+
+    late final http.Response response;
+
+    try {
+      response = await http.get(url, headers: {'Authorization': auth ?? ''});
+    } catch (e) {
+      throw NetworkException();
+    }
+
+    final data = jsonDecode(response.body);
+
+    print('Recieved response from api (GET /$name/collections/$collection/documents):');
+    print(data);
+
+    if (data['error'] != null) throw DeadbaseConnectionException(data['error'], response.statusCode);
+
+    final documents = data['data'] as List<dynamic>;
+    if (documents.isEmpty) return [];
+
+    return documents.map((e) => e as String).toList();
+  }
+
+  Future<String> setDocument(String collection, Map<String, dynamic> documentData) async {
+    final url = Uri.parse('$host/$name/collections/$collection/setDocument');
+
+    late final http.Response response;
+
+    try {
+      response = await http.post(url,
+          headers: {'Authorization': auth ?? '', 'Content-Type': 'application/json'}, body: jsonEncode(documentData));
+    } catch (e) {
+      throw NetworkException();
+    }
+
+    final data = jsonDecode(response.body);
+
+    print('Recieved response from api (POST /$name/collections/$collection/setDocument):');
+    print(data);
+
+    if (data['error'] != null) throw DeadbaseConnectionException(data['error'], response.statusCode);
+
+    return data['data'];
+  }
+
+  Future<void> deleteDocument(String collection, String documentId) async {
+    final url = Uri.parse('$host/$name/collections/$collection/documents/$documentId');
+
+    late final http.Response response;
+
+    try {
+      response = await http.delete(url, headers: {'Authorization': auth ?? '', 'Content-Type': 'application/json'});
+    } catch (e) {
+      throw NetworkException();
+    }
+
+    final data = jsonDecode(response.body);
+
+    print('Recieved response from api (DELETE /$name/collections/$collection/documents/$documentId):');
+    print(data);
+
+    if (data['error'] != null) throw DeadbaseConnectionException(data['error'], response.statusCode);
+  }
 }

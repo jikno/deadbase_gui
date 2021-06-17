@@ -1,10 +1,11 @@
+import 'package:deadbase_gui/pages/database/components/documents.dart';
 import 'package:flutter/material.dart';
 import 'package:beamer/beamer.dart';
 import 'package:context_menus/context_menus.dart';
-import '../database/components/add_collection_dialog.dart';
-import '../database/components/delete_collection_dialog.dart';
-import '../database/components/edit_database_dialog.dart';
-import '../database/components/rename_collection_dialog.dart';
+import './components/add_collection_dialog.dart';
+import './components/delete_collection_dialog.dart';
+import './components/edit_database_dialog.dart';
+import './components/rename_collection_dialog.dart';
 import '../../services/deadbase.dart';
 import '../../utils.dart';
 import '../../state.dart';
@@ -18,7 +19,7 @@ class Database extends StatefulWidget {
 class _DatabaseState extends State<Database> {
   bool loadingCollections = false;
   List<String> collections = [];
-  String? focusedCollection;
+  String? selectedCollection;
 
   late Deadbase deadbase;
 
@@ -116,7 +117,7 @@ class _DatabaseState extends State<Database> {
                 contextMenu: GenericContextMenu(
                   buttonConfigs: [
                     ContextMenuButtonConfig('Edit database meta', onPressed: editDatabaseMeta),
-                    ContextMenuButtonConfig('Refetch connections', onPressed: () {
+                    ContextMenuButtonConfig('Refetch collections', onPressed: () {
                       loadCollections();
                       notifyUser(context, 'Collections are up to date!', success: true);
                     }),
@@ -178,10 +179,10 @@ class _DatabaseState extends State<Database> {
                                       children: collections
                                           .map((e) => CollectionName(
                                                 name: e,
-                                                onSelected: () => setState(() => focusedCollection = e),
+                                                onSelected: () => setState(() => selectedCollection = e),
                                                 onDelete: () => deleteCollection(e),
                                                 onRename: () => renameCollection(e),
-                                                selected: focusedCollection == e,
+                                                selected: selectedCollection == e,
                                               ))
                                           .toList(),
                                     ),
@@ -211,11 +212,7 @@ class _DatabaseState extends State<Database> {
               VerticalDivider(thickness: 0.5, color: Colors.grey, width: 0.5),
               Expanded(
                 flex: 1,
-                child: Container(
-                  child: Center(
-                    child: Text('loading document...'),
-                  ),
-                ),
+                child: Documents(deadbase: deadbase, selectedCollection: selectedCollection),
               )
             ],
           ),
