@@ -206,4 +206,25 @@ class Deadbase {
 
     if (data['error'] != null) throw DeadbaseConnectionException(data['error'], response.statusCode);
   }
+
+  Future<Map<String, dynamic>> getDocument(String collection, String documentId) async {
+    final url = Uri.parse('$host/$name/collections/$collection/documents/$documentId');
+
+    late final http.Response response;
+
+    try {
+      response = await http.get(url, headers: {'Authorization': auth ?? '', 'Content-Type': 'application/json'});
+    } catch (e) {
+      throw NetworkException();
+    }
+
+    final data = jsonDecode(response.body);
+
+    print('Recieved response from api (DELETE /$name/collections/$collection/documents/$documentId):');
+    print(data);
+
+    if (data['error'] != null) throw DeadbaseConnectionException(data['error'], response.statusCode);
+
+    return data['data'];
+  }
 }

@@ -1,4 +1,5 @@
 import 'package:context_menus/context_menus.dart';
+import 'package:deadbase_gui/pages/database/components/document.dart';
 import 'package:flutter/material.dart';
 import './delete_document_dialog.dart';
 import './document_snapshot.dart';
@@ -126,7 +127,17 @@ class _DocumentsState extends State<Documents> {
           width: 0.5,
           thickness: 0.5,
           color: Colors.grey,
-        )
+        ),
+        Expanded(
+            child: selectedDocumentId == null
+                ? Center(
+                    child: Text('No document selected'),
+                  )
+                : Document(
+                    deadbase: widget.deadbase,
+                    collection: widget.selectedCollection!,
+                    document: selectedDocumentId!,
+                  ))
       ],
     );
   }

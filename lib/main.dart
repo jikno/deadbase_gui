@@ -4,13 +4,16 @@ import 'pages/connect/main.dart';
 import 'pages/database/main.dart';
 import 'package:beamer/beamer.dart';
 import 'package:window_size/window_size.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 void main() {
-  WidgetsFlutterBinding.ensureInitialized();
-  if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
-    setWindowTitle('App title');
-    setWindowMinSize(const Size(270 * 3 + 1, 500));
-    setWindowMaxSize(Size.infinite);
+  if (!kIsWeb) {
+    WidgetsFlutterBinding.ensureInitialized();
+    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+      setWindowTitle('App title');
+      setWindowMinSize(const Size(270 * 3 + 1, 500));
+      setWindowMaxSize(Size.infinite);
+    }
   }
 
   runApp(Application());
@@ -33,25 +36,5 @@ class Application extends StatelessWidget {
       routerDelegate: routerDelegate,
       theme: ThemeData(primarySwatch: Colors.blue),
     );
-
-    // return ContextMenuOverlay(
-    //   child: MaterialApp(
-    //     home: Scaffold(
-    //       body: Center(
-    //         child: Column(
-    //           children: [
-    //             Text('hi'),
-    //             ContextMenuRegion(
-    //               child: Container(width: 300, height: 200, color: Colors.red),
-    //               contextMenu: LinkContextMenu(
-    //                 url: 'https://flutter.dev',
-    //               ),
-    //             )
-    //           ],
-    //         ),
-    //       ),
-    //     ),
-    //   ),
-    // );
   }
 }
